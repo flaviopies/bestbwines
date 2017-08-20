@@ -3,7 +3,6 @@ import re
 import pandas as pd
 from bs4 import BeautifulSoup
 
-#site = "https://www.wine.com.br/browse.ep?cID=100851&filters=&pn=1&exibirEsgotados=false&listagem=horizontal&sorter=featuredProducts-desc"
 site = "https://www.wine.com.br/vinhos/tinto/cVINHOS-atTIPO_TINTO-p1.html"
 
 def wine_request(site,page):
@@ -59,17 +58,26 @@ def pagination_dataframe(site, n_max):
     pages_iteration = range(1, n_max)
 
     for page in pages_iteration:
-        temp_df = pd.DataFrame()
-        r = wine_request(site, page)
-        soup = wine_soup(r)
-        temp_df["Names"] = find_wine_names(soup)  # names
-        temp_df["Winery"] = find_wine_description(soup)[0]  # winery
-        temp_df["Region"] = find_wine_description(soup)[1]  # region
-        temp_df["Country"] = find_wine_description(soup)[2]  # country
-        temp_df["Type"] = find_wine_description(soup)[3]  # type
-        temp_df["Volume"] = find_wine_description(soup)[4]  # volume
-        temp_df["Price"] = find_wine_prices(soup)  # price
-        df = pd.concat([df,temp_df],axis=0)
-        del temp_df
+        try:
+            temp_df = pd.DataFrame()
+            r = wine_request(site, page)
+            soup = wine_soup(r)
+            temp_df["Names"] = find_wine_names(soup)  # names
+            temp_df["Winery"] = find_wine_description(soup)[0]  # winery
+            temp_df["Region"] = find_wine_description(soup)[1]  # region
+            temp_df["Country"] = find_wine_description(soup)[2]  # country
+            temp_df["Type"] = find_wine_description(soup)[3]  # type
+            temp_df["Volume"] = find_wine_description(soup)[4]  # volume
+            temp_df["Price"] = find_wine_prices(soup)  # price
+            df = pd.concat([df,temp_df],axis=0)
+            del temp_df
+        except:
+            print("Exception on page {}".format(page))
 
     return df
+
+
+def last_page(soup):
+    nav_list = soup.select(".navegacaoListagem")
+    last = nav_list [0].ul.find_all("li")[-2].a.string
+    return last
