@@ -4,13 +4,12 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import configparser
 
-configParser = configparser.RawConfigParser()
-configFilePath = r"config"
-configParser.read(configFilePath)
-user_agent = configParser.get('your-config', 'user_agent')
+#configParser = configparser.RawConfigParser()
+#configFilePath = r"config"
+#configParser.read(configFilePath)
+#user_agent = configParser.get('your-config', 'user_agent')
 
 url = 'https://www.vivino.com/search/wines?q=Toro+loco+2015&start=1'
-
 
 def vivino_simple_request(url):
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
@@ -40,7 +39,7 @@ def vivino_request(vivino_site,user_agent,search):
 
 
 def vivino_soup(r):
-    soup = BeautifulSoup(r.text,"html.parser")
+    soup = BeautifulSoup(r.text,"html5lib")
     return soup
 
 
@@ -73,11 +72,11 @@ def vivino_rating_iterator(wine_list):
         try:
             rating = vivino_rating(new_soup)
             rating_n = vivino_rating_n(new_soup)
-            print("{} - Rating: {} - iteração {} de {}".format(wine,rating,n,len(wine_list)))
+            print("{} - Rating: {}, number of reviews: {},- iteração {} de {}".format(wine,rating,rating_n,n,len(wine_list)))
         except:
             rating = "No rating available"
             rating_n = "No rating available"
-            print("No rating available for {} - iteração {} de {}".format(wine,n,len(wine_list)))
+            print("Problems in scrapping {} - iteração {} de {}".format(wine,n,len(wine_list)))
         rating_list.append(rating)
         n_list.append(rating_n)
     return [rating_list,n_list]

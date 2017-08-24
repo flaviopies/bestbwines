@@ -2,6 +2,7 @@ import requests
 import re
 import pandas as pd
 from bs4 import BeautifulSoup
+from datetime import datetime as dt
 
 site = "https://www.wine.com.br/vinhos/tinto/cVINHOS-atTIPO_TINTO-p1.html"
 
@@ -73,11 +74,11 @@ def pagination_dataframe(site, n_max):
             del temp_df
         except:
             print("Exception on page {}".format(page))
-
+        df["Date_mined"] = dt.now()
     return df
 
 
 def last_page(soup):
     nav_list = soup.select(".navegacaoListagem")
     last = nav_list [0].ul.find_all("li")[-2].a.string
-    return last
+    return int(last)
