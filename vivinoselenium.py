@@ -1,5 +1,4 @@
     # -*- coding: utf-8 -*-
-    """ Created on Sat Jun 24 11:51:40 2017 @author: Flavio Pies """
 
     import datetime as dt
     import time
@@ -152,8 +151,8 @@
     def prepare_df(df):
         df.columns = ["Name", "Winery", "Region", "Rating_info", "Vendor", "Price", "Link"]
         #region_info = df.Region.str.split("\\n·\\n")
-        df["Country"] = region_info.map(lambda x: region_info(x,0))
-        df["Region"] = region_info.map(lambda x: region_info(x,1))
+        df["Country"] = df.Region.str.map(lambda x: region_info(x,0))
+        df["Region"] = df.Region.str.map(lambda x: region_info(x,1))
         rating_info = df.Rating_info.str.split("\\n")
         df["Rating"] = rating_info.map(lambda x: x[1]).map(float)
         df["Reviews"] = rating_info.map(lambda x: x[2]).str.strip(" ratings").map(int)
