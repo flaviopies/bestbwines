@@ -174,7 +174,9 @@ def translate_class_to_rating(rating_class):
     return rating
 
 
-def wine_main_page_scrape():
+def wine_main_page_scrape(wine_name, winery_name ,wine_url):
+
+    #need to get url here
 
     #General infos - related to wine table
     region = browser.find_element_by_class_name("wine-page__header__information__details__location__region").text
@@ -191,6 +193,8 @@ def wine_main_page_scrape():
     regional_style = summary_info[3].text
     food_pairing = summary_info[4].text
 
+    general_info_df = pd.DataFrame(data=[wine_name, winery_name, region, country, n_ratings, rating, price_avg, highlights, grape, regional_style, food_pairing],
+                                   columns=["Name","Winery","Region","Country","N_ratings","Rating","Price","Highlights","Grape","Regional_style","Food_pairing"])
 
     #Press vendor button - related to vendor table
     shop_button = browser.find_element_by_class_name("show-merchants")
@@ -201,35 +205,44 @@ def wine_main_page_scrape():
             shops_infos = get_shops_infos(1)
             show_all_merchants = browser.find_element_by_class_name("show-all-merchants")
             show_all_merchants.click()
-            merchant_infos_list = [[], [], [], [], []]
+            merchant_infos_list = [[],[],[], [], [], [], []]
 
             merchants_infos_elements = browser.find_elements_by_class_name("ppc-merchant-shop")
             for merchants_infos in merchants_infos_elements:
+                merchant_infos_list[0].append(wine_name)
+                merchant_infos_list[1].append(winery_name)
                 try:
-                    merchant_infos_list[0].append(merchants_infos.find_element_by_class_name("visit-shop").text)
-                except:
-                    merchant_infos_list[0].append("")
-                try:
-                    merchant_infos_list[1].append(merchants_infos.find_element_by_class_name("merchant-description").text)
-                except:
-                    merchant_infos_list[1].append("")
-                try:
-                    merchant_infos_list[2].append(merchants_infos.find_element_by_class_name("wine-country").text)
+                    merchant_infos_list[2].append(merchants_infos.find_element_by_class_name("visit-shop").text)
                 except:
                     merchant_infos_list[2].append("")
                 try:
-                    merchant_infos_list[3].append(merchants_infos.find_element_by_class_name("merchant-link").text)
+                    merchant_infos_list[3].append(merchants_infos.find_element_by_class_name("merchant-description").text)
                 except:
                     merchant_infos_list[3].append("")
                 try:
-                    merchant_infos_list[4].append(merchants_infos.find_element_by_class_name("view-shop-button").get_attribute("href"))
+                    merchant_infos_list[4].append(merchants_infos.find_element_by_class_name("wine-country").text)
                 except:
                     merchant_infos_list[4].append("")
-
+                try:
+                    merchant_infos_list[5].append(merchants_infos.find_element_by_class_name("merchant-link").text)
+                except:
+                    merchant_infos_list[5].append("")
+                try:
+                    merchant_infos_list[6].append(merchants_infos.find_element_by_class_name("view-shop-button").get_attribute("href"))
+                except:
+                    merchant_infos_list[6].append("")
     except:
-            shops_infos = ""
+        merchant_infos_list = [wine_name,winery_name,[], [], [], [], []]
+
+    merchant_df = pd.DataFrame(data=merchant_infos_list,columns=["Name","Winery","Merchant","Merchant_description","Country_merchant","Price","Link_merchant"])
 
     #previous_years
+    try:
+        show_previous_year_button = browser.find_element_by_class_name("vintage-comparison__actions")
+        show_previous_year_button.find_element_by_css_selector("a").click()
+    except:
+        pass
+
     previous_years_list = []
     previous_years = browser.find_elements_by_class_name("vintage-comparison__item__year")
     for year in previous_years:
@@ -245,7 +258,12 @@ def wine_main_page_scrape():
     for n_rating in previous_years_n_ratings:
         previous_years_n_ratings_list.append(n_rating .text)
 
-    previous_years_infos = [previous_years_list,previous_years_ratings_list,previous_years_n_ratings_list]
+    wine_name_list = [wine_name for year in previous_years_list]
+    winery_name_list = [winery_name for year in previous_years_list]
+    previous_years_infos = [wine_name_list,winery_name_list ,previous_years_list,previous_years_ratings_list,previous_years_n_ratings_list]
+
+    previous_years_df = pd.DataFrame(data=previous_years_list,columns=["Name","Winery","Year","Rating","N_ratings"])
+
 
     #comments
     #show all comments
@@ -283,6 +301,14 @@ def wine_main_page_scrape():
         for rev in rating_element.find_elements_by_css_selector("*"):
             sum = sum + translate_class_to_rating(rev.get_attribute("class"))
         ratings_from_users.append(sum)
+
+    user_infos[2] = ratings_from_users
+    user_infos[3] = [wine_name for rating in ratings_from_users]
+    user_infos[4] = [winery_name for rating in ratings_from_users]
+    comments_df = pd.DataFrame(data=user_infos,columns=["User_info","Comment","Rating","Name","Winery"])
+
+    return general_info_df, merchant_df, previous_years_df, comments_df
+
 
     #Missing recommended wines
 
