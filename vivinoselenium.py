@@ -15,26 +15,6 @@ import numpy as np
 def openwebsite(url):
     browser.get(url)
     print("Page is ready!")
-    delay = 10  # seconds
-    #try:
-    #    WebDriverWait(browser, delay).until(EC.presence_of_element_located((By.NAME, 'add-to-cart-button')))
-    #except TimeoutException:
-    #    print("Loading took too much time")
-
-
-def extend_page():
-    for _ in range(100):
-        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-
-#def choose_wine_type():
-    #Interact with wine type
-
-#def choose_price_range():
-    #interact with pricing bands
-
-#def choose_rating_range():
-    #def rating range
-
 
 def roll_page_down():
     SCROLL_PAUSE_TIME = 0.5
@@ -187,63 +167,149 @@ def select_wine_type(activebutton,buttontoactivate):
     return winetype
 
 
-today = dt.datetime.today()
-browser = webdriver.Chrome()
-time.sleep(5)
-url = "https://www.vivino.com/explore"
-openwebsite(url)
-time.sleep(5)
+def translate_class_to_rating(rating_class):
+    rating = rating_class.replace("icon-","")
+    rating = rating.replace("-pct", "")
+    rating = float(rating)/100
+    return rating
 
 
-wine_type_class = "wine-type-selector__item"
-wine_name_class = "wine-card__header__wine"
-winery_class = "wine-card__header__winery"
-location_class = "location"
-statistics_class = "wine-card__statistics"
-button_class = "add-to-cart-button"
-slider_class = "ui-slider-handle"
+def wine_main_page_scrape():
+    #General infos
+    region = browser.find_element_by_class_name("wine-page__header__information__details__location__region").text
+    country = browser.find_element_by_class_name("wine-page__header__information__details__location__country").text
+    n_ratings = browser.find_element_by_class_name("wine-page__header__information__details__average-rating__label").text
+    rating = browser.find_element_by_class_name("wine-page__header__information__details__average-rating__value__number").text
+    price_avg = browser.find_element_by_class_name("wine-page__header__information__details__average-price__label--highlight").text
+    highlights = browser.find_elements_by_class_name("highlights__wrapper")
+    highlights = "".join(x.text + "\n" for x in highlights)
 
-sliders = browser.find_elements_by_class_name(slider_class)
-# Set price range to maximum
-ActionChains(browser).click_and_hold(sliders[0]).move_by_offset(-30,0).release().perform()
-ActionChains(browser).click_and_hold(sliders[1]).move_by_offset(50,0).release().perform()
-# Set ratings range to maximum
-ActionChains(browser).click_and_hold(sliders[2]).move_by_offset(-150,0).release().perform()
-time.sleep(10)
-
-roll_page_down()
-
-wines = scrape_by_class(wine_name_class)
-wineries = scrape_by_class(winery_class)
-locations = scrape_by_class(location_class)
-stats = scrape_by_class(statistics_class)
-
-wine_type_buttons = browser.find_elements_by_class_name(wine_type_class)
-
-df = create_df(wines, wineries, locations, stats, button_class,wine_type_buttons[0].text)
-df = pd.DataFrame(df[0])
-df = prepare_df(df)
-close_pop_up()
-
-for index, wine_type in enumerate(wine_type_buttons):
+    #Press vendor button
+    shop_button = browser.find_element_by_class_name("show-merchants")
     try:
-        if index < len(wine_type_buttons) -1:
-            select_wine_type(wine_type_buttons[index],wine_type_buttons[index + 1])
-            print("Scraping {} wines now ...".format(wine_type_buttons[index + 1].text))
-
-            roll_page_down()
-            time.wait(5)
-            wines = scrape_by_class(wine_name_class)
-            wineries = scrape_by_class(winery_class)
-            locations = scrape_by_class(location_class)
-            stats = scrape_by_class(statistics_class)
-
-            dff = create_df(wines, wineries, locations, stats, button_class, wine_type.text)
-            dff = pd.DataFrame(dff[0])
-            dff = prepare_df(dff)
-            df = pd.concat([df,dff],axis=0)
-            close_pop_up()
-            go_to_home()
+        shop_button.click()
+        #ideally put webdriver.wait merchants-list__close-button here
+        if browser.find_element_by_class_name("merchants-list__close-button"):
+            shops_infos = get_shops_infos(1)
     except:
-        print("Couldn't scrape from {} to {} wine".format(wine_type_buttons[index].text,wine_type_buttons[index + 1].text))
-        continue
+            shops_infos = ""
+
+    #summary infos
+    summary_info = browser.find_elements_by_class_name("wine-page__summary__item__content")
+    grape = summary_info[1].text
+    regional_style = summary_info[3].text
+    food_pairing = summary_info[4].text
+
+    #previous_years
+    previous_years_list = []
+    previous_years = browser.find_elements_by_class_name("vintage-comparison__item__year")
+    for year in previous_years:
+        previous_years_list.append(year.text)
+
+    previous_years_ratings_list = []
+    previous_years_ratings = browser.find_elements_by_class_name("vintage-comparison__item__statistics__count")
+    for rating in previous_years_ratings:
+        previous_years_ratings_list.append(rating.text)
+
+    previous_years_n_ratings_list = []
+    previous_years_n_ratings = browser.find_elements_by_class_name("vintage-comparison__item__statistics__rating")
+    for n_rating in previous_years_n_ratings:
+        previous_years_n_ratings_list.append(n_rating .text)
+
+    previous_years_infos = [previous_years_list,previous_years_ratings_list,previous_years_n_ratings_list]
+
+    #comments
+    #show all comments
+    test_i = 0
+    for _ in range(10000):
+        try:
+            element = WebDriverWait(browser, 3).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "vintage-review-items__show-more")))
+            browser.execute_script("arguments[0].scrollIntoView();", element)
+            element.click()
+            print("It worked")
+            test_i = 0
+        except:
+            print("Didn't work")
+            test_i = test_i + 1
+            if test_i > 5:
+                break
+
+    reviewers_username = [username.text for username in browser.find_elements_by_class_name("information__user_link")]
+    reviewers_comment = [comment.text for comment in browser.find_elements_by_class_name("vintage-review-item__content__note")]
+    reviewers_user_n_ratings = [user_n_rating.text for user_n_rating in browser.find_elements_by_class_name("information__subtitle")]
+    reviewers_all_info = [all_info.text for all_info in browser.find_elements_by_class_name("information__name")]
+
+    reviewers_ratings_selenium = browser.find_elements_by_class_name("vintage-review-item__rating")
+    reviewers_ratings = []
+    for rating_element in reviewers_ratings_selenium:
+        sum = 0
+        for rev in rating_element.find_elements_by_css_selector("*"):
+            sum = sum + translate_class_to_rating(rev.get_attribute("class"))
+        reviewers_ratings.append(sum)
+
+
+
+if __name__ == "main":
+    today = dt.datetime.today()
+    browser = webdriver.Chrome()
+    time.sleep(5)
+    url = "https://www.vivino.com/explore"
+    openwebsite(url)
+    time.sleep(5)
+
+
+    wine_type_class = "wine-type-selector__item"
+    wine_name_class = "wine-card__header__wine"
+    wine_links_class = "wine-card__header"
+    winery_class = "wine-card__header__winery"
+    location_class = "location"
+    statistics_class = "wine-card__statistics"
+    button_class = "add-to-cart-button"
+    slider_class = "ui-slider-handle"
+
+    sliders = browser.find_elements_by_class_name(slider_class)
+    # Set price range to maximum
+    ActionChains(browser).click_and_hold(sliders[0]).move_by_offset(-30,0).release().perform()
+    ActionChains(browser).click_and_hold(sliders[1]).move_by_offset(50,0).release().perform()
+    # Set ratings range to maximum
+    ActionChains(browser).click_and_hold(sliders[2]).move_by_offset(-150,0).release().perform()
+    time.sleep(10)
+
+    roll_page_down()
+
+    wines = scrape_by_class(wine_name_class)
+    wineries = scrape_by_class(winery_class)
+    locations = scrape_by_class(location_class)
+    stats = scrape_by_class(statistics_class)
+    wine_links = browser.find_elements_by_class_name(wine_links_class)
+
+    wine_type_buttons = browser.find_elements_by_class_name(wine_type_class)
+
+    df = create_df(wines, wineries, locations, stats, button_class,wine_type_buttons[0].text)
+    df = pd.DataFrame(df[0])
+    df = prepare_df(df)
+    close_pop_up()
+
+    for index, wine_type in enumerate(wine_type_buttons):
+        try:
+            if index < len(wine_type_buttons) -1:
+                select_wine_type(wine_type_buttons[index],wine_type_buttons[index + 1])
+                print("Scraping {} wines now ...".format(wine_type_buttons[index + 1].text))
+
+                roll_page_down()
+                time.wait(5)
+                wines = scrape_by_class(wine_name_class)
+                wineries = scrape_by_class(winery_class)
+                locations = scrape_by_class(location_class)
+                stats = scrape_by_class(statistics_class)
+
+                dff = create_df(wines, wineries, locations, stats, button_class, wine_type.text)
+                dff = pd.DataFrame(dff[0])
+                dff = prepare_df(dff)
+                df = pd.concat([df,dff],axis=0)
+                close_pop_up()
+                go_to_home()
+        except:
+            print("Couldn't scrape from {} to {} wine".format(wine_type_buttons[index].text,wine_type_buttons[index + 1].text))
+            continue
