@@ -193,55 +193,69 @@ def wine_main_page_scrape(wine_name, winery_name ,wine_url):
     regional_style = summary_info[3].text
     food_pairing = summary_info[4].text
 
-    general_info_df = pd.DataFrame(data=[wine_name, winery_name, region, country, n_ratings, rating, price_avg, highlights, grape, regional_style, food_pairing],
+    general_info_list = [wine_name, winery_name, region, country, n_ratings, rating, price_avg, highlights, grape, regional_style, food_pairing]
+    general_info_df = pd.DataFrame(data=[general_info_list],
                                    columns=["Name","Winery","Region","Country","N_ratings","Rating","Price","Highlights","Grape","Regional_style","Food_pairing"])
+    if general_info_df:
+        print("Succesfully created general_info_df for {}".format(wine_name))
 
     #Press vendor button - related to vendor table
+    merchant_infos_list = [[], [], [], [], [], [], []]
     shop_button = browser.find_element_by_class_name("show-merchants")
+    time.sleep(2)
     try:
         shop_button.click()
         #ideally put webdriver.wait merchants-list__close-button here
-        if browser.find_element_by_class_name("merchants-list__close-button"):
-            shops_infos = get_shops_infos(1)
-            show_all_merchants = browser.find_element_by_class_name("show-all-merchants")
-            show_all_merchants.click()
-            merchant_infos_list = [[],[],[], [], [], [], []]
+        #WebDriverWait(browser, 3).until(EC.presence_of_element_located((By.CLASS_NAME, "merchants-list__close-button")))
+        show_all_merchants = WebDriverWait(browser, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, "show-all-merchants")))
+        time.sleep(2)
+        show_all_merchants.click()
 
-            merchants_infos_elements = browser.find_elements_by_class_name("ppc-merchant-shop")
-            for merchants_infos in merchants_infos_elements:
-                merchant_infos_list[0].append(wine_name)
-                merchant_infos_list[1].append(winery_name)
-                try:
-                    merchant_infos_list[2].append(merchants_infos.find_element_by_class_name("visit-shop").text)
-                except:
-                    merchant_infos_list[2].append("")
-                try:
-                    merchant_infos_list[3].append(merchants_infos.find_element_by_class_name("merchant-description").text)
-                except:
-                    merchant_infos_list[3].append("")
-                try:
-                    merchant_infos_list[4].append(merchants_infos.find_element_by_class_name("wine-country").text)
-                except:
-                    merchant_infos_list[4].append("")
-                try:
-                    merchant_infos_list[5].append(merchants_infos.find_element_by_class_name("merchant-link").text)
-                except:
-                    merchant_infos_list[5].append("")
-                try:
-                    merchant_infos_list[6].append(merchants_infos.find_element_by_class_name("view-shop-button").get_attribute("href"))
-                except:
-                    merchant_infos_list[6].append("")
+        merchants_infos_elements = browser.find_elements_by_class_name("ppc-merchant-shop")
+        for merchants_infos in merchants_infos_elements:
+            merchant_infos_list[0].append(wine_name)
+            merchant_infos_list[1].append(winery_name)
+            try:
+                merchant_infos_list[2].append(merchants_infos.find_element_by_class_name("visit-shop").text)
+            except:
+                merchant_infos_list[2].append("")
+            try:
+                merchant_infos_list[3].append(merchants_infos.find_element_by_class_name("merchant-description").text)
+            except:
+                merchant_infos_list[3].append("")
+            try:
+                merchant_infos_list[4].append(merchants_infos.find_element_by_class_name("wine-country").text)
+            except:
+                merchant_infos_list[4].append("")
+            try:
+                merchant_infos_list[5].append(merchants_infos.find_element_by_class_name("merchant-link").text)
+            except:
+                merchant_infos_list[5].append("")
+            try:
+                merchant_infos_list[6].append(merchants_infos.find_element_by_class_name("view-shop-button").get_attribute("href"))
+            except:
+                merchant_infos_list[6].append("")
     except:
         merchant_infos_list = [wine_name,winery_name,[], [], [], [], []]
 
-    merchant_df = pd.DataFrame(data=merchant_infos_list,columns=["Name","Winery","Merchant","Merchant_description","Country_merchant","Price","Link_merchant"])
+    merchant_df = pd.DataFrame(columns=["Name","Winery","Merchant","Merchant_description","Country_merchant","Price","Link_merchant"])
+    for i, col in enumerate(merchant_df.columns):
+        merchant_df[col] = merchant_infos_list[i]
+
+    if merchant_df:
+        print("Succesfully created merchant_df for {}".format(wine_name))
 
     #previous_years
-    try:
-        show_previous_year_button = browser.find_element_by_class_name("vintage-comparison__actions")
-        show_previous_year_button.find_element_by_css_selector("a").click()
-    except:
-        pass
+    #show_previous_year_button = browser.find_element_by_class_name("vintage-comparison__actions")
+    #show_previous_year_button = show_previous_year_button.find_element_by_css_selector("a")
+    #time.sleep(2)
+    #show_previous_year_button.click()
+
+    show_previous_year_button = WebDriverWait(browser, 3).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "vintage-comparison__actions")))
+    browser.execute_script("arguments[0].scrollIntoView();", show_previous_year_button )
+    show_previous_year_button = show_previous_year_button.find_element_by_css_selector("a")
+    show_previous_year_button.click()
 
     previous_years_list = []
     previous_years = browser.find_elements_by_class_name("vintage-comparison__item__year")
@@ -262,8 +276,12 @@ def wine_main_page_scrape(wine_name, winery_name ,wine_url):
     winery_name_list = [winery_name for year in previous_years_list]
     previous_years_infos = [wine_name_list,winery_name_list ,previous_years_list,previous_years_ratings_list,previous_years_n_ratings_list]
 
-    previous_years_df = pd.DataFrame(data=previous_years_list,columns=["Name","Winery","Year","Rating","N_ratings"])
+    previous_years_df = pd.DataFrame(columns=["Name","Winery","Year","Rating","N_ratings"])
+    for i, col in enumerate(previous_years_df .columns):
+        previous_years_df[col] = previous_years_infos[i]
 
+    if previous_years_df:
+        print("Succesfully created previous_year_df for {}".format(wine_name))
 
     #comments
     #show all comments
@@ -305,7 +323,9 @@ def wine_main_page_scrape(wine_name, winery_name ,wine_url):
     user_infos[2] = ratings_from_users
     user_infos[3] = [wine_name for rating in ratings_from_users]
     user_infos[4] = [winery_name for rating in ratings_from_users]
-    comments_df = pd.DataFrame(data=user_infos,columns=["User_info","Comment","Rating","Name","Winery"])
+    comments_df = pd.DataFrame(columns=["User_info","Comment","Rating","Name","Winery"])
+    for i, col in enumerate(comments_df.columns):
+        comments_df[col] = user_infos[i]
 
     return general_info_df, merchant_df, previous_years_df, comments_df
 
