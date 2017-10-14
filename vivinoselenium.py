@@ -371,20 +371,28 @@ if __name__ == "__main__":
 
     sliders = browser.find_elements_by_class_name(slider_class)
     # Set price range to maximum
-    ActionChains(browser).click_and_hold(sliders[0]).move_by_offset(-30,0).release().perform()
-    ActionChains(browser).click_and_hold(sliders[1]).move_by_offset(50,0).release().perform()
+    #ActionChains(browser).click_and_hold(sliders[0]).move_by_offset(-50,0).release().perform()
+    ActionChains(browser).click_and_hold(sliders[1]).move_by_offset(120,0).release().perform()
     # Set ratings range to maximum
-    ActionChains(browser).click_and_hold(sliders[2]).move_by_offset(-150,0).release().perform()
+    #ActionChains(browser).click_and_hold(sliders[2]).move_by_offset(-40,0).release().perform()
     #select all wine_types
     wine_type_buttons = browser.find_elements_by_class_name(wine_type_class)[1:]
     for type_button in wine_type_buttons:
         type_button.click()
     time.sleep(10)
 
-    #roll_page_down()
+    roll_page_down()
     wines = scrape_by_class(wine_name_class)
     wineries = scrape_by_class(winery_class)
     wine_links = [element.get_attribute("href") for element in browser.find_elements_by_class_name(wine_links_class)]
+    all_wines_list = [wines,wineries,wine_links]
+
+    all_wines_df = pd.DataFrame(columns=["Wine","Winery","Wine_url"])
+    for i, col in enumerate(all_wines_df.columns):
+        all_wines_df[col] = all_wines_list[i]
+
+    time.sleep(3)
+    all_wines_df.to_excel("20171014_All_wines.xlsx")
 
     wine_df = pd.DataFrame()
     merchant_df = pd.DataFrame()
@@ -393,48 +401,45 @@ if __name__ == "__main__":
 
     loop_start_time = time.time()
     for idx, wine in enumerate(wines):
+        if idx < 515:
+            continue
+        start_time = time.time()
+        wine_temp, merchant_temp, previous_year_temp , comments_temp =wine_main_page_scrape(wines[idx],wineries[idx],wine_links[idx],1,1,1,0)
+        end_time = time.time()
 
         try:
-            start_time = time.time()
-            wine_temp, merchant_temp, previous_year_temp , comments_temp =wine_main_page_scrape(wines[idx],wineries[idx],wine_links[idx],1,1,1,0)
-            end_time = time.time()
-
-            try:
-                wine_df = pd.concat([wine_df,wine_temp],axis=0)
-                print("Added information to wine_df")
-            except:
-                print("Didn't add information to wine_df")
-                pass
-            try:
-                merchant_df = pd.concat([merchant_df,merchant_temp],axis=0)
-                print("Added information to merchant_df")
-            except:
-                print("Didn't add information to merchant_df")
-                pass
-            try:
-                previous_year_df = pd.concat([previous_year_df,previous_year_temp],axis=0)
-                print("Added information to previous_year_df")
-            except:
-                print("Didn't add information to previous_year_df")
-                pass
-            try:
-                comments_df = pd.concat([comments_df,comments_temp],axis=0)
-                print("Added information to comments_df")
-            except:
-                print("Didn't add information to comments_df")
-                pass
-
-            print()
-            print("Scraping {} took {} seconds".format(wine, end_time - start_time))
-            print("Running {} iteration of {} - {} seconds passed".format(idx+1, len(wines), end_time - loop_start_time))
-            print()
-            del comments_temp
-            del wine_temp
-            del previous_year_temp
-            del merchant_temp
+            wine_df = pd.concat([wine_df,wine_temp],axis=0)
+            print("Added information to wine_df")
         except:
-            print("Error in loop - it is possible that the browser was closed or the internet connection fell")
-            continue
+            print("Didn't add information to wine_df")
+            pass
+        try:
+            merchant_df = pd.concat([merchant_df,merchant_temp],axis=0)
+            print("Added information to merchant_df")
+        except:
+            print("Didn't add information to merchant_df")
+            pass
+        try:
+            previous_year_df = pd.concat([previous_year_df,previous_year_temp],axis=0)
+            print("Added information to previous_year_df")
+        except:
+            print("Didn't add information to previous_year_df")
+            pass
+        try:
+            comments_df = pd.concat([comments_df,comments_temp],axis=0)
+            print("Added information to comments_df")
+        except:
+            print("Didn't add information to comments_df")
+            pass
+
+        print()
+        print("Scraping {} took {} seconds".format(wine, end_time - start_time))
+        print("Running {} iteration of {} - {} seconds passed".format(idx+1, len(wines), end_time - loop_start_time))
+        print()
+        del comments_temp
+        del wine_temp
+        del previous_year_temp
+        del merchant_temp
 
     time.sleep(5)
     try:
