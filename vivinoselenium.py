@@ -175,7 +175,8 @@ def translate_class_to_rating(rating_class):
 
 
 def wine_main_page_scrape():
-    #General infos
+
+    #General infos - related to wine table
     region = browser.find_element_by_class_name("wine-page__header__information__details__location__region").text
     country = browser.find_element_by_class_name("wine-page__header__information__details__location__country").text
     n_ratings = browser.find_element_by_class_name("wine-page__header__information__details__average-rating__label").text
@@ -184,21 +185,49 @@ def wine_main_page_scrape():
     highlights = browser.find_elements_by_class_name("highlights__wrapper")
     highlights = "".join(x.text + "\n" for x in highlights)
 
-    #Press vendor button
+    #summary infos - related to wine table
+    summary_info = browser.find_elements_by_class_name("wine-page__summary__item__content")
+    grape = summary_info[1].text
+    regional_style = summary_info[3].text
+    food_pairing = summary_info[4].text
+
+
+    #Press vendor button - related to vendor table
     shop_button = browser.find_element_by_class_name("show-merchants")
     try:
         shop_button.click()
         #ideally put webdriver.wait merchants-list__close-button here
         if browser.find_element_by_class_name("merchants-list__close-button"):
             shops_infos = get_shops_infos(1)
+            show_all_merchants = browser.find_element_by_class_name("show-all-merchants")
+            show_all_merchants.click()
+            merchant_infos_list = [[], [], [], [], []]
+
+            merchants_infos_elements = browser.find_elements_by_class_name("ppc-merchant-shop")
+            for merchants_infos in merchants_infos_elements:
+                try:
+                    merchant_infos_list[0].append(merchants_infos.find_element_by_class_name("visit-shop").text)
+                except:
+                    merchant_infos_list[0].append("")
+                try:
+                    merchant_infos_list[1].append(merchants_infos.find_element_by_class_name("merchant-description").text)
+                except:
+                    merchant_infos_list[1].append("")
+                try:
+                    merchant_infos_list[2].append(merchants_infos.find_element_by_class_name("wine-country").text)
+                except:
+                    merchant_infos_list[2].append("")
+                try:
+                    merchant_infos_list[3].append(merchants_infos.find_element_by_class_name("merchant-link").text)
+                except:
+                    merchant_infos_list[3].append("")
+                try:
+                    merchant_infos_list[4].append(merchants_infos.find_element_by_class_name("view-shop-button").get_attribute("href"))
+                except:
+                    merchant_infos_list[4].append("")
+
     except:
             shops_infos = ""
-
-    #summary infos
-    summary_info = browser.find_elements_by_class_name("wine-page__summary__item__content")
-    grape = summary_info[1].text
-    regional_style = summary_info[3].text
-    food_pairing = summary_info[4].text
 
     #previous_years
     previous_years_list = []
@@ -235,19 +264,27 @@ def wine_main_page_scrape():
             if test_i > 5:
                 break
 
-    reviewers_username = [username.text for username in browser.find_elements_by_class_name("information__user_link")]
-    reviewers_comment = [comment.text for comment in browser.find_elements_by_class_name("vintage-review-item__content__note")]
-    reviewers_user_n_ratings = [user_n_rating.text for user_n_rating in browser.find_elements_by_class_name("information__subtitle")]
-    reviewers_all_info = [all_info.text for all_info in browser.find_elements_by_class_name("information__name")]
+    user_info_selenium = browser.find_elements_by_class_name("vintage-review-item__content")
+    user_infos = [[],[]]
+    for info in user_info_selenium:
+        try:
+            user_infos[0].append(info.find_element_by_class_name("information__name").text)
+        except:
+            user_infos[0].append("")
+        try:
+            user_infos[1].append(info.find_element_by_class_name("vintage-review-item__content__note").text)
+        except:
+            user_infos[1].append("")
 
-    reviewers_ratings_selenium = browser.find_elements_by_class_name("vintage-review-item__rating")
-    reviewers_ratings = []
-    for rating_element in reviewers_ratings_selenium:
+    selenium_element_ratings = browser.find_elements_by_class_name("vintage-review-item__rating")
+    ratings_from_users = []
+    for rating_element in selenium_element_ratings:
         sum = 0
         for rev in rating_element.find_elements_by_css_selector("*"):
             sum = sum + translate_class_to_rating(rev.get_attribute("class"))
-        reviewers_ratings.append(sum)
+        ratings_from_users.append(sum)
 
+    #Missing recommended wines
 
 
 if __name__ == "main":
