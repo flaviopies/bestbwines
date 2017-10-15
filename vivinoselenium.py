@@ -394,52 +394,69 @@ if __name__ == "__main__":
     time.sleep(3)
     all_wines_df.to_excel("20171014_All_wines.xlsx")
 
-    wine_df = pd.DataFrame()
-    merchant_df = pd.DataFrame()
-    previous_year_df = pd.DataFrame()
-    comments_df = pd.DataFrame()
+    try:
+        wine_df = pd.read_excel("20171014_Wines.xlsx")
+    except:
+        wine_df = pd.DataFrame()
+
+    try:
+        merchant_df = pd.read_excel("20171014_Merchants.xlsx")
+    except:
+        merchant_df = pd.DataFrame()
+
+    try:
+        previous_year_df = pd.read_excel("20171014_Previous_years.xlsx")
+    except:
+        previous_year_df = pd.DataFrame()
+
+    try:
+        comments_df = pd.read_excel("20171014_Comments.xlsx")
+    except:
+        comments_df = pd.DataFrame()
 
     loop_start_time = time.time()
     for idx, wine in enumerate(wines):
-        if idx < 515:
-            continue
-        start_time = time.time()
-        wine_temp, merchant_temp, previous_year_temp , comments_temp =wine_main_page_scrape(wines[idx],wineries[idx],wine_links[idx],1,1,1,0)
-        end_time = time.time()
 
-        try:
-            wine_df = pd.concat([wine_df,wine_temp],axis=0)
-            print("Added information to wine_df")
-        except:
-            print("Didn't add information to wine_df")
-            pass
-        try:
-            merchant_df = pd.concat([merchant_df,merchant_temp],axis=0)
-            print("Added information to merchant_df")
-        except:
-            print("Didn't add information to merchant_df")
-            pass
-        try:
-            previous_year_df = pd.concat([previous_year_df,previous_year_temp],axis=0)
-            print("Added information to previous_year_df")
-        except:
-            print("Didn't add information to previous_year_df")
-            pass
-        try:
-            comments_df = pd.concat([comments_df,comments_temp],axis=0)
-            print("Added information to comments_df")
-        except:
-            print("Didn't add information to comments_df")
-            pass
+        if wine not in wine_df["Name"].values:
+            start_time = time.time()
+            try:
+                wine_temp, merchant_temp, previous_year_temp , comments_temp =wine_main_page_scrape(wines[idx],wineries[idx],wine_links[idx],1,1,1,0)
+            except:
+                print("Failed in scraping {}".format(wine))
+            end_time = time.time()
 
-        print()
-        print("Scraping {} took {} seconds".format(wine, end_time - start_time))
-        print("Running {} iteration of {} - {} seconds passed".format(idx+1, len(wines), end_time - loop_start_time))
-        print()
-        del comments_temp
-        del wine_temp
-        del previous_year_temp
-        del merchant_temp
+            try:
+                wine_df = pd.concat([wine_df,wine_temp],axis=0)
+                print("Added information to wine_df")
+            except:
+                print("Didn't add information to wine_df")
+                pass
+            try:
+                merchant_df = pd.concat([merchant_df,merchant_temp],axis=0)
+                print("Added information to merchant_df")
+            except:
+                print("Didn't add information to merchant_df")
+                pass
+            try:
+                previous_year_df = pd.concat([previous_year_df,previous_year_temp],axis=0)
+                print("Added information to previous_year_df")
+            except:
+                print("Didn't add information to previous_year_df")
+                pass
+            try:
+                comments_df = pd.concat([comments_df,comments_temp],axis=0)
+                print("Added information to comments_df")
+            except:
+                print("Didn't add information to comments_df")
+                pass
+
+            print()
+            print("Scraping {} took {} seconds".format(wine, end_time - start_time))
+            print("Running {} iteration of {} - {} seconds passed".format(idx+1, len(wines), end_time - loop_start_time))
+            print()
+        else:
+            print("Wine {} has already been scraped".format(wine))
+            pass
 
     time.sleep(5)
     try:
